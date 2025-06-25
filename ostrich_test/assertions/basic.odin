@@ -5,60 +5,61 @@ import "core:strings"
 import "../core"
 
 // Global assertion state (thread-local for parallel safety)
-@(thread_local) current_test_state: struct {
+@(thread_local)
+currentTestState: struct {
     failed: bool,
-    error_message: string,
-    assertions_passed: int,
-    assertions_failed: int,
+    errorMessage: string,
+    assertionsPassed: int,
+    assertionsFailed: int,
 }
 
 // Reset assertion state for new test
 reset_assertions :: proc() {
-    current_test_state.failed = false
-    current_test_state.error_message = ""
-    current_test_state.assertions_passed = 0
-    current_test_state.assertions_failed = 0
+    currentTestState.failed = false
+    currentTestState.errorMessage = ""
+    currentTestState.assertionsPassed = 0
+    currentTestState.assertionsFailed = 0
 }
 
 // Get test result based on assertion state
-get_test_result :: proc(test_name: string) -> core.TestResult {
+get_test_result :: proc(testName: string) -> core.TestResult {
     defer reset_assertions()
-    
-    if current_test_state.failed {
+
+    if currentTestState.failed {
         return core.TestResult{
-            name = test_name,
+            name = testName,
             status = .FAIL,
-            message = current_test_state.error_message,
-            assertions_passed = current_test_state.assertions_passed,
-            assertions_failed = current_test_state.assertions_failed,
+            message = currentTestState.errorMessage,
+            assertionsPassed = currentTestState.assertionsPassed,
+            assertionsFailed = currentTestState.assertionsFailed,
         }
     }
-    
+
     return core.TestResult{
-        name = test_name,
+        name = testName,
         status = .PASS,
         message = "All assertions passed",
-        assertions_passed = current_test_state.assertions_passed,
-        assertions_failed = current_test_state.assertions_failed,
+        assertionsPassed = currentTestState.assertionsPassed,
+        assertionsFailed = currentTestState.assertionsFailed,
     }
 }
 
 // EXPORTED helper functions for other modules
 record_failure :: proc(message: string, location := #caller_location) {
-    current_test_state.failed = true
-    current_test_state.assertions_failed += 1
-    
-    if current_test_state.error_message == "" {
-        current_test_state.error_message = fmt.tprintf("%s at %s:%d", message, location.file_path, location.line)
+    currentTestState.failed = true
+    currentTestState.assertionsFailed += 1
+
+    if currentTestState.errorMessage == "" {
+        currentTestState.errorMessage = fmt.tprintf("%s at %s:%d", message, location.file_path, location.line)
     } else {
-        current_test_state.error_message = fmt.tprintf("%s\n%s at %s:%d", 
-            current_test_state.error_message, message, location.file_path, location.line)
+        currentTestState.errorMessage = fmt.tprintf("%s\n%s at %s:%d",
+            currentTestState.errorMessage, message, location.file_path, location.line)
     }
 }
 
 // EXPORTED helper function for other modules
 record_success :: proc() {
-    current_test_state.assertions_passed += 1
+    currentTestState.assertionsPassed += 1
 }
 
 // Basic assertions

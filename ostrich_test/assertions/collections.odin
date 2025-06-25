@@ -1,105 +1,98 @@
 package assertions
 
 import "core:fmt"
-import "core:slice"
 
-assert_length :: proc(collection: $T, expected_length: int, message: string = "", location := #caller_location) {
-    actual_length := len(collection)
-    if actual_length == expected_length {
+//Length of all data within a Collection
+// When using this for an OstrichDB Collection the expectedLength arg should be less than 500mb. Just use a constant
+assert_length :: proc(collection: $T, expectedLength: int, message: string = "", location := #caller_location) {
+    actualLength := len(collection)
+    if actualLength == expectedLength {
         record_success()
     } else {
-        error_msg := fmt.tprintf("Expected length %d, got %d", expected_length, actual_length)
+        errorMessage := fmt.tprintf("Expected length %d, got %d", expectedLength, actualLength)
         if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
+            errorMessage = fmt.tprintf("%s: %s", message, errorMessage)
         }
-        record_failure(error_msg, location)
+        record_failure(errorMessage, location)
     }
 }
 
+//I dont see a use for this one. Collections will never truly be empty. Will keep for now - Marshall
 assert_empty :: proc(collection: $T, message: string = "", location := #caller_location) {
     if len(collection) == 0 {
         record_success()
     } else {
-        error_msg := fmt.tprintf("Expected empty collection, got length %d", len(collection))
+        errorMessage := fmt.tprintf("Expected empty collection, got length %d", len(collection))
         if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
+            errorMessage = fmt.tprintf("%s: %s", message, errorMessage)
         }
-        record_failure(error_msg, location)
+        record_failure(errorMessage, location)
     }
 }
 
+//Use this one after the Collection metadata header is supposed to be appended to the collection
 assert_not_empty :: proc(collection: $T, message: string = "", location := #caller_location) {
     if len(collection) > 0 {
         record_success()
     } else {
-        error_msg := "Expected non-empty collection, got empty collection"
+        errorMessage := "Expected non-empty collection, got empty collection"
         if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
+            errorMessage = fmt.tprintf("%s: %s", message, errorMessage)
         }
-        record_failure(error_msg, location)
+        record_failure(errorMessage, location)
     }
 }
 
-assert_contains_element :: proc(collection: []$T, element: T, message: string = "", location := #caller_location) {
+//Passed an OstrichDB ParsedCollection Type for the collection arg as well as an OstrichDB [dynamic]ParsedCluster Type for clusters arg
+assert_contains_cluster :: proc(collection: []$T, clusters: T, message: string = "", location := #caller_location) {
     found := false
-    for item in collection {
-        if item == element {
-            found = true
-            break
+
+    for item in collection{
+        body: $T
+        for bodyElement in body{
+            if bodyElement == clusters {
+                if len(clusters) != 0 {
+                    found = true
+                    break
+                }
+            }
         }
     }
-    
+
     if found {
         record_success()
     } else {
-        error_msg := fmt.tprintf("Expected collection to contain element '%v'", element)
+        errorMessage := "Expected collection to contain clusters '"
         if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
+            errorMessage = fmt.tprintf("%s: %s", message, errorMessage)
         }
-        record_failure(error_msg, location)
+        record_failure(errorMessage, location)
     }
 }
 
-assert_not_contains_element :: proc(collection: []$T, element: T, message: string = "", location := #caller_location) {
+//Passed an OstrichDB ParsedCollection Type for the collection arg as well as an OstrichDB [dynamic]ParsedCluster Type for clusters arg
+assert_not_contains_clusters:: proc(collection: []$T, clusters: T, message: string = "", location := #caller_location) {
     found := false
-    for item in collection {
-        if item == element {
-            found = true
-            break
+
+    for item in collection{
+        body: $T
+        for bodyElement in body{
+            if bodyElement == clusters {
+                if len(clusters) != 0 {
+                    found = true
+                    break
+                }
+            }
         }
     }
-    
+
     if !found {
         record_success()
     } else {
-        error_msg := fmt.tprintf("Expected collection to not contain element '%v'", element)
+        errorMessage := "Expected collection to not contain clusters'"
         if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
+            errorMessage = fmt.tprintf("%s: %s", message, errorMessage)
         }
-        record_failure(error_msg, location)
+        record_failure(errorMessage, location)
     }
-}
-
-assert_slice_equal :: proc(expected: []$T, actual: []T, message: string = "", location := #caller_location) {
-    if len(expected) != len(actual) {
-        error_msg := fmt.tprintf("Expected slice length %d, got %d", len(expected), len(actual))
-        if message != "" {
-            error_msg = fmt.tprintf("%s: %s", message, error_msg)
-        }
-        record_failure(error_msg, location)
-        return
-    }
-    
-    for i in 0..<len(expected) {
-        if expected[i] != actual[i] {
-            error_msg := fmt.tprintf("Slices differ at index %d: expected '%v', got '%v'", i, expected[i], actual[i])
-            if message != "" {
-                error_msg = fmt.tprintf("%s: %s", message, error_msg)
-            }
-            record_failure(error_msg, location)
-            return
-        }
-    }
-    
-    record_success()
 }

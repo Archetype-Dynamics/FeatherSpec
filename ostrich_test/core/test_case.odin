@@ -2,27 +2,12 @@ package core
 
 import "core:time"
 
-TestFunc :: proc() -> TestResult
-SetupFunc :: proc() -> bool
-TeardownFunc :: proc() -> bool
-
-TestCase :: struct {
-    name: string,
-    description: string,
-    test_func: TestFunc,
-    setup: SetupFunc,
-    teardown: TeardownFunc,
-    timeout: time.Duration,
-    tags: []string,
-    skip: bool,
-    skip_reason: string,
-}
-
-make_test_case :: proc(name: string, description: string, test_func: TestFunc) -> TestCase {
+make_test_case :: proc(name: string, description: string, testProcedure: TestProc) -> TestCase {
     return TestCase{
         name = name,
         description = description,
-        test_func = test_func,
+
+        test_proc = testProcedure,
         timeout = 30 * time.Second,
         tags = {},
         skip = false,
@@ -30,16 +15,16 @@ make_test_case :: proc(name: string, description: string, test_func: TestFunc) -
 }
 
 make_test_case_with_setup :: proc(
-    name: string, 
-    description: string, 
-    test_func: TestFunc,
-    setup: SetupFunc,
-    teardown: TeardownFunc,
+    name: string,
+    description: string,
+    testProcedure: TestProc,
+    setup: SetupProc,
+    teardown: TeardownProc,
 ) -> TestCase {
-    test_case := make_test_case(name, description, test_func)
-    test_case.setup = setup
-    test_case.teardown = teardown
-    return test_case
+    newTestCase := make_test_case(name, description, testProcedure)
+    newTestCase.setup = setup
+    newTestCase.teardown = teardown
+    return newTestCase
 }
 
 // Add tags to test case

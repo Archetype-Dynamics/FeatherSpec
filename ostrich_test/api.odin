@@ -53,7 +53,7 @@ assert_between :: assertions.assert_between
 assert_length :: assertions.assert_length
 assert_empty :: assertions.assert_empty
 assert_not_empty :: assertions.assert_not_empty
-assert_contains_element :: assertions.assert_contains_element
+assert_contains_cluster :: assertions.assert_contains_cluster
 
 // Assertion helpers
 reset_assertions :: assertions.reset_assertions
@@ -103,10 +103,10 @@ default_config :: proc() -> Config {
 quick_test :: proc(test_name: string, test_proc: proc() -> bool) -> bool {
     // Run the test directly without using the complex core framework
     reset_assertions()
-    
+
     test_passed := test_proc()
     result := get_test_result(test_name)
-    
+
     // If the test procedure returned false but no assertions failed,
     // mark it as failed
     if !test_passed && result.status == core.TestStatus.PASS {
@@ -116,14 +116,14 @@ quick_test :: proc(test_name: string, test_proc: proc() -> bool) -> bool {
             message = "Test function returned false",
         }
     }
-    
-    // Print result
+
+
     if result.status == core.TestStatus.PASS {
         fmt.printf("✓ %s\n", result.name)
     } else {
         fmt.printf("✗ %s: %s\n", result.name, result.message)
     }
-    
+
     return result.status == core.TestStatus.PASS
 }
 
