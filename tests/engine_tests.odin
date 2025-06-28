@@ -262,5 +262,4 @@ run_engine_tests::proc(){
                 fmt.println(fmt.tprintf("❌Test: %s  failed...", result.name))
         }
     }
-    os.exit(0)
 }

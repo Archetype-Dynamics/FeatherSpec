@@ -54,8 +54,6 @@ run_nlp_tests::proc(){
         cRes, _ := nlp.run_agent(projectContext, "Create a collection called mycol2")
         _, _ = finalize_request(projectContext, cRes)
 
-        fmt.println("Finalized")
-
         dRes, _ := nlp.run_agent(projectContext, "Delete a collection called mycol2")
         _, ok := finalize_request(projectContext, dRes)
         ostrich_test.assert_true(ok, "Result of NLP finalize should be true")
@@ -97,8 +95,6 @@ run_nlp_tests::proc(){
         return ostrich_test.get_test_result("Test_Delete_Cluster_NLP")
     }))
 
-    /*
-
     //TEST 12: Create a new record using NLP
     fmt.println("\n12. Testing Creating A New Record Using NLP")
     ostrich_test.add_test(&suite, ostrich_test.test("Test_Create_New_Record_NLP", proc() -> ostrich_test.TestResult {
@@ -121,18 +117,15 @@ run_nlp_tests::proc(){
         defer free(projectContext)
 
         cRes, _ := nlp.run_agent(projectContext, "Create a record called my_record1 with the value of 'true' in my_cluster1 in collection my_col1")
-        fmt.println(cRes)
         _, _ = finalize_request(projectContext, cRes)
 
         dRes, _ := nlp.run_agent(projectContext, "Delete the record called my_record1 in my_cluster1 in collection my_col1")
-        fmt.println(dRes)
         _, ok := finalize_request(projectContext, dRes)
 
         ostrich_test.assert_true(ok, "Result of NLP finalize should be true")
 
         return ostrich_test.get_test_result("Test_Delete_Record_NLP")
     }))
-    */
 
     config := ostrich_test.TestConfig{
         verbose = true,
