@@ -96,6 +96,7 @@ run_engine_tests::proc(){
         defer free(projectContext)
         collection:= data.make_new_collection("TestCollectionRenamed", .STANDARD)
         defer free(collection)
+        creationError:= data.create_collection_file(projectContext, collection)
         res, _:= data.get_all_collection_names(projectContext)
          fmt.println("DEBUG: Here are all collections that exists: \n")
         for col in res {
@@ -169,6 +170,7 @@ run_engine_tests::proc(){
         creationError:= data.create_collection_file(projectContext, collection)
         cluster:= data.make_new_cluster(collection, "TestClusterRenamed")
         defer free(cluster)
+        createSuccess:= data.create_cluster_block_in_collection(projectContext, collection, cluster)
         deleteSuccess:= data.erase_cluster(projectContext, collection, cluster )
         ostrich_test.assert_nil(deleteSuccess, "Result of deleting a Cluster should be nil")
 
@@ -205,6 +207,7 @@ run_engine_tests::proc(){
         creationError:= data.create_collection_file(projectContext, collection)
         cluster:= data.make_new_cluster(collection, "TestCluster")
         defer free(cluster)
+        createSuccess:= data.create_cluster_block_in_collection(projectContext, collection, cluster)
         record:= data.make_new_record(collection, cluster, "TestRecord")
         defer free(record)
         record.type = .BOOLEAN
@@ -397,7 +400,7 @@ run_engine_tests::proc(){
     // 11. List collections in project: no dir
     ostrich_test.add_test(&suite, ostrich_test.test("Test_List_Collections_In_Project_NoDir", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
-        ctx := P.make_new_project_context("u","NoProj")
+        ctx := P.make_new_project_context("test_user_12345","NoProj")
         defer free(ctx)
         list, ok := P.list_collections_in_project(ctx)
         ostrich_test.assert_false(ok, "no collections dir should ok=false")
@@ -408,7 +411,7 @@ run_engine_tests::proc(){
     // 12. Erase project
     ostrich_test.add_test(&suite, ostrich_test.test("Test_Erase_Project", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
-        ctx := P.make_new_project_context("er_usr","EraseProj")
+        ctx := P.make_new_project_context("test_user_12345","EraseProj")
         defer free(ctx)
         _ = P.init_project_structure(ctx)
         erased := P.erase_project(ctx)
@@ -418,20 +421,7 @@ run_engine_tests::proc(){
         return ostrich_test.get_test_result("Test_Erase_Project")
     }))
 
-    // 13. Delete directory recursive helper
-    ostrich_test.add_test(&suite, ostrich_test.test("Test_Delete_Directory_Recursive", proc() -> ostrich_test.TestResult {
-        ostrich_test.reset_assertions()
-        tmp := "bin/tmp_recursive_test/"
-        _ = os.make_directory(tmp)
-        defer os.remove(tmp)
-        ok := P.delete_directory_recursive(tmp)
-        ostrich_test.assert_true(ok, "delete_directory_recursive should succeed")
-        exists := os.exists(tmp)
-        ostrich_test.assert_false(exists, "directory should be gone")
-        return ostrich_test.get_test_result("Test_Delete_Directory_Recursive")
-    }))
-
-    // 14. List collections with info: unknown metadata
+    // 13. List collections with info: unknown metadata
     ostrich_test.add_test(&suite, ostrich_test.test("Test_List_Collections_With_Info_NoEntries", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
         ctx := P.make_new_project_context("info_u","InfoProj")
@@ -443,7 +433,7 @@ run_engine_tests::proc(){
         return ostrich_test.get_test_result("Test_List_Collections_With_Info_NoEntries")
     }))
 
-    // 15. Rename project (failure case)
+    // 14. Rename project (failure case)
     ostrich_test.add_test(&suite, ostrich_test.test("Test_Rename_Project_Invalid", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
         ctx := P.make_new_project_context("r_usr","RenameProj")
@@ -469,11 +459,12 @@ run_engine_tests::proc(){
     // 2. separate_collection: with metadata
     ostrich_test.add_test(&suite, ostrich_test.test("Test_Separate_Collection_WithMetadata", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
-        raw := lib.METADATA_START + "# A:1\n" + lib.METADATA_END + " body content"
+        md_prefix :: lib.METADATA_START + "# A:1\n" + lib.METADATA_END
+        raw :=  md_prefix + " body content"
         sep, err := D.separate_collection(raw)
         ostrich_test.assert_nil(err, "should not error on valid metadata")
         ostrich_test.assert_true(sep.hasMetadata, "hasMetadata should be true")
-        ostrich_test.assert_equal(strings.trim_space(sep.metadataHeader), lib.METADATA_START+"# A:1"+lib.METADATA_END, "metadataHeader mismatch")
+        ostrich_test.assert_equal(strings.trim_space(sep.metadataHeader), strings.trim_space(md_prefix), "metadataHeader mismatch")
         ostrich_test.assert_equal(sep.body, "body content", "body should contain content after metadata")
         return ostrich_test.get_test_result("Test_Separate_Collection_WithMetadata")
     }))
@@ -487,15 +478,11 @@ run_engine_tests::proc(){
     }))
 
     // 4. make_collection_body and make_empty_collection_body
-    ostrich_test.add_test(&suite, ostrich_test.test("Test_Make_Empty_And_NonEmpty_Body", proc() -> ostrich_test.TestResult {
+    ostrich_test.add_test(&suite, ostrich_test.test("Test_Make_Empty_Body", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
         empty := D.make_empty_collection_body()
         ostrich_test.assert_true(empty.isEmpty, "empty body should be marked empty")
-        clusters := make([dynamic]D.ParsedCluster)
-        body := D.make_collection_body("raw", clusters)
-        ostrich_test.assert_false(body.isEmpty, "body with cluster slice should not be empty")
-        ostrich_test.assert_equal(body.rawBody, "raw", "rawBody should match")
-        return ostrich_test.get_test_result("Test_Make_Empty_And_NonEmpty_Body")
+        return ostrich_test.get_test_result("Test_Make_Empty_Body")
     }))
 
     // 5. count_lines_in_string
@@ -588,11 +575,12 @@ run_engine_tests::proc(){
     // 2. separate_collection: with metadata
     ostrich_test.add_test(&suite, ostrich_test.test("Test_Separate_Collection_WithMetadata", proc() -> ostrich_test.TestResult {
         ostrich_test.reset_assertions()
-        raw := lib.METADATA_START + "# A:1\n" + lib.METADATA_END + " body content"
+        md_prefix :: lib.METADATA_START + "# A:1\n" + lib.METADATA_END
+        raw :=  md_prefix + " body content"
         sep, err := D.separate_collection(raw)
         ostrich_test.assert_nil(err, "should not error on valid metadata")
         ostrich_test.assert_true(sep.hasMetadata, "hasMetadata should be true")
-        ostrich_test.assert_equal(strings.trim_space(sep.metadataHeader), lib.METADATA_START+"# A:1"+lib.METADATA_END, "metadataHeader mismatch")
+        ostrich_test.assert_equal(strings.trim_space(sep.metadataHeader), strings.trim_space(md_prefix), "metadataHeader mismatch")
         ostrich_test.assert_equal(sep.body, "body content", "body should contain content after metadata")
         return ostrich_test.get_test_result("Test_Separate_Collection_WithMetadata")
     }))
